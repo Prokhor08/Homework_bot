@@ -577,5 +577,4 @@ def Bot():
 
 
 if __name__ == "__main__":
-    print(now().hour, now().minute)
     Bot()
