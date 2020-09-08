@@ -9,9 +9,9 @@ lessons_num = 13
 
 keyboards = {
     'main':[
-        [KeyboardButton(text = "Получить домашнее задание")], 
-        [KeyboardButton(text = "Получить дз по предмету")],
-        [KeyboardButton(text = "Добавить домашнее задание")]
+        [KeyboardButton(text="📚 Получить домашнее задание 📚")],
+        [KeyboardButton(text="📕 Получить дз по предмету 📕")],
+        [KeyboardButton(text="✏️ Добавить домашнее задание ✏️")]
     ],
     'lessons':[
         [kb("Алгебра"), kb("Геометрия")],
