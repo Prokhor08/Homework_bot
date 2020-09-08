@@ -49,22 +49,28 @@ last_keyboard = deque()
 day = now().weekday()
 
 admins_id = [800155626]
+users_ids = [800155626, 664331079, 998445492, 912050293,
+             652242346, 723471766, 539584923, 1249475977, 
+             918018751, 939427187, 1035364674, 871823293,
+             792033308, 604117040, 892138456, 902858644
+             ]
 
 class Strings:
     def __init__(self):
         self.start_message = "Привет"
         self.tab = "    "
-        self.no_task = "Нет информации о домашнем задании"
-        self.no_adm = "Вы не администратор, но ачивку 'прочитай и пойми код' заработали"
+        self.no_task = "Нет информации о домашнем задании."
+        self.no_adm = "Вы не администратор здесь."
         self.choose_subject = "Выберите предмет"
-        self.send_task = "Отправьте задние. Вы также можете прикрепить файлы.\n Нажмите Готово, когда закончите."
-        self.use_buttons = "Используйте кнопки для общения со мной"
+        self.send_task = "Отправьте задние. Вы также можете прикрепить файлы.\nНажмите Готово, когда закончите."
+        self.use_buttons = "Используйте кнопки для общения со мной."
         self.back = "Назад"
         self.no_back = "Назад больше некуда"
         self.succesfully_updated = "Успешно обновлено"
         self.bad_task = "Некорректно!"
-        self.send_start = "Пришлите /start для корректной работы"
+        self.send_start = "Пожалуйста, пришлите /start для корректной работы."
         self.done = "Готово"
+        self.left = "Вы не из 8В 31 лицея(."
 
 strings = Strings()
 
@@ -143,6 +149,11 @@ async def change_timetable(message: types.Message):
 #for all users
 async def start(message: types.Message):
     uid = message.from_user.id
+
+    if not uid in users_ids:
+        await message.reply(strings.left)
+        return
+
     state[uid] = 0
     updates_by_user[uid] = {'subject_name':"", 'text':[], 'files':[]}
     last_keyboard.append('main')
