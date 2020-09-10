@@ -58,7 +58,7 @@ class Strings:
     def __init__(self):
         self.start_message = "Привет"
         self.tab = "    "
-        self.no_task = "Нет информации о домашнем задании."
+        self.no_task = "Нет информации о домашнем задании.\n"
         self.no_adm = "Вы не администратор здесь."
         self.choose_subject = "Выберите предмет"
         self.send_task = "Отправьте задние. Вы также можете прикрепить файлы.\nНажмите Готово, когда закончите."
@@ -151,6 +151,7 @@ class Hometask:
                 hometask += strings.tab + strings.have_files + "\n"
         
         return hometask
+
 
 hometask = Hometask()
 
@@ -493,21 +494,35 @@ async def done(message: types.Message):
     await bot.send_message(chat_id = uid, text = strings.done, reply_markup=keyboard('lessons'))
 
 async def updating():
+    global day
+
+    was_update = False
 
     def update():
-        if now().hour == 7 and now().day != 6:
+        if day == 6:
+            day = 0
+        
+        if now().hour == 7 and now().day != 6 and not was_update:
+            was_update = True
+
             day = day_update(day)
-            hometask.update_timetable(timetable[day])
             
             for subject_name in hometask.hometask:
                 hometask.clear_task(subject_name)
             
             for subject_name in hometask.docs:
                 hometask.clear_docs(subject_name)
+            
+            for subject_name in hometask.photos:
+                hometask.clear_photos(subject_name)
     
+    def was_update_change():
+        if now().hour == 8:
+            was_update = False
 
     while True:
         update()
+        was_update_change()
 
         await asyncio.sleep(UPDATE_INTERVAL)
 
