@@ -18,7 +18,7 @@ def now():
 def text_on_button(keyboard_name, button_num):
 
     curnum = -1
-    text = ''
+    text = ''   
     for row in keyboards[keyboard_name]:
         for button in row:
             curnum += 1
@@ -499,6 +499,7 @@ async def updating():
     was_update = False
 
     def update():
+        global day
         if day == 6:
             day = 0
         
