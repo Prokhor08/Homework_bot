@@ -49,7 +49,7 @@ state = {}
 updates_by_user = {}
 last_keyboard = deque()
 
-day = now().weekday()
+day = now().weekday() + 1
 
 admins_id = [800155626]
 users_ids = [800155626, 664331079, 998445492, 912050293, 652242346, 723471766, 539584923, 1249475977, 918018751, 939427187, 1035364674, 871823293, 792033308, 604117040, 892138456, 902858644 ]
@@ -142,9 +142,8 @@ class Hometask:
                 task = self.hometask[subject_name]
             
             if task == None:
-                hometask += strings.no_task
+                hometask += strings.tab + strings.no_task
             else:
-                hometask += strings.tab
                 hometask += task
             
             if self.photos[subject_name] != [] or self.docs[subject_name] != []:
@@ -364,7 +363,7 @@ async def others(message: types.Message):
 
             await inf_bot.send_message(chat_id = admins_id[0], text = log_str)
 
-            updates_by_user[uid]['text'] += (str(message.text)) + "\n"
+            updates_by_user[uid]['text'] += strings.tab + (str(message.text)) + "\n"
 
 
 async def back(message: types.Message):
