@@ -500,6 +500,7 @@ async def updating():
 
     def update():
         global day
+        global was_update
         if day == 6:
             day = 0
         
@@ -508,16 +509,17 @@ async def updating():
 
             day = day_update(day)
             
-            for subject_name in hometask.hometask:
+            for subject_name in timetable[day]:
                 hometask.clear_task(subject_name)
             
-            for subject_name in hometask.docs:
+            for subject_name in timetable[day]:
                 hometask.clear_docs(subject_name)
             
-            for subject_name in hometask.photos:
+            for subject_name in timetable[day]:
                 hometask.clear_photos(subject_name)
     
     def was_update_change():
+        global was_update
         if now().hour == 8:
             was_update = False
 
