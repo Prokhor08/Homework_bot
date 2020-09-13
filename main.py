@@ -497,27 +497,21 @@ async def updating():
 
     was_update = False
 
-    async def update():
-        global day
-
+    while True:
         if day == 6:
             day = 0
-        
+
         if now().hour == 7 and now().day != 6 and not was_update:
             was_update = True
 
             day += 1
             day %= 6
 
-            await inf_bot.send_message(chat_id = admins_id[0], text="DAY UPDATED!")
-
-    def was_update_change():
+            await inf_bot.send_message(chat_id=admins_id[0], text="DAY UPDATED!")
+        
         if now().hour == 8:
             was_update = False
-
-    while True:
-        update()
-        was_update_change()
+        
         await inf_bot.send_message(admins_id[0], text="Updating...")
 
         await asyncio.sleep(UPDATE_INTERVAL)
