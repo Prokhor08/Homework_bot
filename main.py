@@ -49,7 +49,7 @@ state = {}
 updates_by_user = {}
 last_keyboard = deque()
 
-day = now().weekday() + 1
+day = now().weekday()%6
 
 admins_id = [800155626]
 users_ids = [800155626, 664331079, 998445492, 912050293, 652242346, 723471766, 539584923, 1249475977, 918018751, 939427187, 1035364674, 871823293, 792033308, 604117040, 892138456, 902858644 ]
@@ -497,34 +497,28 @@ async def updating():
 
     was_update = False
 
-    def update():
+    async def update():
         global day
-        global was_update
+
         if day == 6:
             day = 0
         
         if now().hour == 7 and now().day != 6 and not was_update:
             was_update = True
 
-            day = day_update(day)
-            
-            for subject_name in timetable[day]:
-                hometask.clear_task(subject_name)
-            
-            for subject_name in timetable[day]:
-                hometask.clear_docs(subject_name)
-            
-            for subject_name in timetable[day]:
-                hometask.clear_photos(subject_name)
-    
+            day += 1
+            day %= 6
+
+            await inf_bot.send_message(chat_id = admins_id[0], text="DAY UPDATED!")
+
     def was_update_change():
-        global was_update
         if now().hour == 8:
             was_update = False
 
     while True:
         update()
         was_update_change()
+        await inf_bot.send_message(admins_id[0], text="Updating...")
 
         await asyncio.sleep(UPDATE_INTERVAL)
 
