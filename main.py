@@ -47,7 +47,7 @@ inf_disp = Dispatcher(bot)
 
 state = {}
 updates_by_user = {}
-last_keyboard = deque()
+last_keyboard = {}
 
 day = now().weekday()%6
 
@@ -259,9 +259,10 @@ async def start(message: types.Message):
         await message.reply(strings.left)
         return
 
+    last_keyboard[uid] = deque()
     state[uid] = 0
     updates_by_user[uid] = {'subject_name':"", 'text':"", 'files':[], 'photos':[]}
-    last_keyboard.append('main')
+    last_keyboard[uid].append('main')
     await message.reply(text = strings.start_message, reply_markup=keyboard('main'))
 
 
@@ -300,7 +301,7 @@ async def send_lessons(message: types.Message, typ):
 
     state[uid] = typ
 
-    last_keyboard.append('lessons')
+    last_keyboard[uid].append('lessons')
     await message.reply(text = strings.choose_subject, reply_markup=keyboard('lessons'))
 
 
@@ -377,18 +378,18 @@ async def back(message: types.Message):
         await message.reply(text=strings.send_start)
         return
 
-    if len(last_keyboard) == 0:
+    if len(last_keyboard[uid]) == 0:
         await message.reply(text=strings.no_back)
         return
 
-    last_keyboard.pop()
+    last_keyboard[uid].pop()
 
-    if len(last_keyboard) == 0:
+    if len(last_keyboard[uid]) == 0:
         await message.reply(text=strings.no_back)
         return
 
     state[message.from_user.id] = 0
-    await message.reply(text=strings.back, reply_markup=keyboard(last_keyboard[-1]))
+    await message.reply(text=strings.back, reply_markup=keyboard(last_keyboard[uid][-1]))
 
 
 async def docs_handler(message: types.Message):
@@ -501,7 +502,7 @@ async def updating():
         if day == 6:
             day = 0
 
-        if now().hour == 7 and now().day != 6 and not was_update:
+        if now().hour == 12 and now().day != 6 and not was_update:
             was_update = True
 
             day += 1
@@ -509,7 +510,7 @@ async def updating():
 
             await inf_bot.send_message(chat_id=admins_id[0], text="DAY UPDATED!")
         
-        if now().hour == 8:
+        if now().hour == 13:
             was_update = False
         
         await inf_bot.send_message(admins_id[0], text="Updating...")
