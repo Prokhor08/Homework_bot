@@ -57,7 +57,8 @@ last_keyboard = {}
 day = now().weekday()%6
 
 admins_id = [800155626]
-users_ids = [800155626, 664331079, 998445492, 912050293, 652242346, 723471766, 539584923, 1249475977, 918018751, 939427187, 1035364674, 871823293, 792033308, 604117040, 892138456, 902858644 ]
+users_ids = [800155626, 664331079, 998445492, 912050293, 652242346, 723471766, 539584923, 1249475977,
+             918018751, 939427187, 1035364674, 871823293, 792033308, 604117040, 892138456, 902858644, 1232287987]
 
 class Strings:
     def __init__(self):
@@ -532,12 +533,12 @@ def Bot():
 
     @disp.message_handler(commands = ['add_user'])
     async def add_userr(message: types.Message):
-        add_user(message)
+        await add_user(message)
 
     
     @disp.message_handler(commands = ['add_admin'])
     async def add_adminn(message: types.Message):
-        add_admin(message)
+        await add_admin(message)
 
     @disp.message_handler(commands = ['change_timetable'])
     async def change_timetablee(message: types.Message):
