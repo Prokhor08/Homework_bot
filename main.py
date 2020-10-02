@@ -589,10 +589,9 @@ def Bot():
         await others(message)
 
     
-    disp.loop.create_task(updating())
+    (disp.loop or asyncio.get_event_loop()).create_task(updating())
     executor.start_polling(disp)
 
 
 if __name__ == "__main__":
-    print("Started")
     Bot()
