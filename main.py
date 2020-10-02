@@ -348,7 +348,6 @@ async def lesson_name_sended(message: types.Message):
 
 async def others(message: types.Message):    
     uid = message.from_user.id
-    await message.reply(message.chat.id)
 
     if not uid in users_ids:
         await message.reply(strings.left)
