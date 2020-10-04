@@ -54,7 +54,7 @@ state = {}
 updates_by_user = {}
 last_keyboard = {}
 
-day = now().weekday()%6
+day = now().weekday()
 
 admins_id = [800155626]
 users_ids = [800155626, 664331079, 998445492, 912050293, 652242346, 723471766, 539584923, 1249475977,
