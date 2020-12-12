@@ -110,7 +110,7 @@ class Strings:
         self.succesfully_cleared = "Успешно удалено."
         self.bad = "BAD!"
         self.incorrect_task = "Некорректное задание!"
-        self.sure = "Вы уверены? Если да, нажмите готово."
+        self.sure = "Вы уверены(удалится только медиа)? Если да, нажмите готово."
 
 
 strings = Strings()
