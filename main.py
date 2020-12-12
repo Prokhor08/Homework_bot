@@ -1,5 +1,5 @@
+# -*- coding: utf_8 -*-
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram import types
 from Keyboard import keyboard, lessons_num, removeKeyboard, keyboards
 from config import API_TOKEN
 from timetable import timetable, day_update
@@ -7,18 +7,26 @@ from datetime import datetime
 from aiogram.utils.markdown import text, bold, italic, code, pre
 from collections import deque
 import pytz
+import sqlite3
 import asyncio
 
+
 #utils
+
+
 async def send_msg(user_id, text):
     await bot.send_message(chat_id=user_id, text=text)
+
+
 def now():
     noww = datetime.now(pytz.timezone('Europe/Moscow'))
     return noww
+
+
 def text_on_button(keyboard_name, button_num):
 
     curnum = -1
-    text = ''   
+    text = ''
     for row in keyboards[keyboard_name]:
         for button in row:
             curnum += 1
@@ -26,24 +34,44 @@ def text_on_button(keyboard_name, button_num):
                 text = button['text']
 
     return text
+
+
 def text_in_msg(keyboard_name, button_num):
     text = text_on_button(keyboard_name, button_num)
     return lambda message: message.text and text in message.text
+
+
 def text_is_lesson_name():
     def check(text):
         for num in range(lessons_num):
             if text_on_button('lessons', num) == text:
                 return True
         return False
-    
+
     return lambda message: message.text and check(message.text)
 
+
 def send_info(message):
-    bot.send_message(chat_id=INFOCHATID ,text = '.')
+    bot.send_message(chat_id=INFOCHATID, text='.')
+
+
+to_en = {
+    "Алгебра" : "Algebra",
+    "Литература" : "",
+    "Физкультура" : "",
+    "Английский язык" : "",
+    "ОБЖ" : "",
+    "История" : "hist",
+    "Геометрия" : "",
+    "Русский язык" : "rus",
+    "Обществознание" : "",
+    "Физика" : "phys"
+}
 
 #consts
 UPDATE_INTERVAL = 300
 INFOCHATID = -1001293904791
+DATACHATID = -1001229074849
 
 #bot
 bot = Bot(token=API_TOKEN, parse_mode="HTML")
@@ -76,12 +104,14 @@ class Strings:
         self.bad_task = "Некорректно!"
         self.send_start = "Пожалуйста, пришлите /start для корректной работы."
         self.done = "Готово"
-        self.left = "Вы не из 8В 31 лицея(."
+        self.left = "Вы не можете пользовать сей бот("
         self.have_files = "Есть прикрепленные файлы."
         self.incorrect_id = "Некорректный id."
         self.succesfully_cleared = "Успешно удалено."
         self.bad = "BAD!"
         self.incorrect_task = "Некорректное задание!"
+        self.sure = "Вы уверены? Если да, нажмите готово."
+
 
 strings = Strings()
 
@@ -91,76 +121,154 @@ class Hometask:
         self.hometask = {}
         self.docs = {}
         self.photos = {}
-    
+        self.connection = sqlite3.connect("database.db")
+        self.cur = self.connection.cursor()
+        self.cur.execute("create table if not exists text_task (lesson_name text, task text)")
+        self.cur.execute(
+            "create table if not exists docs_task (lesson_name text, task text)")
+        self.cur.execute(
+            "create table if not exists photo_task (lesson_name text, task text)")
+        
+
     def update_task(self, subject_name, task):
+        #subject_name = to_en[subject_name]
         self.hometask[subject_name] = task
-    
+        self.cur.execute(
+            "select lesson_name from text_task where lesson_name = ?", [subject_name])
+        if len(self.cur.fetchall()) == 0:
+            self.cur.executemany("insert into text_task values(?,?)", [(subject_name, task)])
+            self.connection.commit()
+        
+        sql = """update text_task
+        set task = ?
+        where lesson_name = ?
+        """
+        self.cur.executemany(sql, [(task, subject_name)])
+        self.connection.commit()
+
     def update_files(self, subject_name, files):
+        #subject_name = to_en[subject_name]
         self.docs[subject_name] = []
+        
+        self.cur.execute(
+            "delete from docs_task where lesson_name = ?", [subject_name])
+        self.connection.commit()
+
         for file in files:
             self.docs[subject_name].append(file)
-    
+            self.cur.executemany("insert into docs_task values (?, ?)", [
+                             (subject_name, file)])
+            self.connection.commit()
+
     def update_photos(self, subject_name, files):
+        #subject_name = to_en[subject_name]
         self.photos[subject_name] = []
+        
+        self.cur.execute(
+            "delete from photo_task where lesson_name = ?", [subject_name])
+        self.connection.commit()
+        
         for file in files:
             self.photos[subject_name].append(file)
+            self.cur.executemany("insert into photo_task values (?, ?)", [
+                             (subject_name, file)])
+            self.connection.commit()
 
     def clear_task(self, subject_name):
+        #subject_name = to_en[subject_name]
         self.hometask[subject_name] = None
-    
+        self.cur.execute(
+            "delete from text_task where lesson_name = ?", [subject_name])
+        self.connection.commit()
+
     def clear_docs(self, subject_name):
+        #subject_name = to_en[subject_name]
         self.docs[subject_name] = []
-    
+        self.cur.execute(
+            "delete from docs_task where lesson_name = ?", [subject_name])
+        self.connection.commit()
+
     def clear_photos(self, subject_name):
+        #subject_name = to_en[subject_name]
         self.photos[subject_name] = []
+        self.cur.execute(
+            "delete from photo_task where lesson_name = ?", [subject_name])
+        self.connection.commit()
 
     def get_task(self, subject_name):
+        #subject_name = to_en[subject_name]
+        '''
         if (not subject_name in self.hometask) or (self.hometask[subject_name] == None):
             return strings.no_task
-        return self.hometask[subject_name]
-    
+        '''
+        
+        self.cur.execute(
+            "select * from text_task where lesson_name = ?", [subject_name])
+        if len(self.cur.fetchall()) == 0:
+            return strings.no_task
+
+        self.cur.execute("select task from text_task where lesson_name = ?", [subject_name])
+        ans = self.cur.fetchall()
+        ans = [i[0] for i in ans]
+
+        #return self.task[subject_name]
+        return ans[0]
+
+
     def get_files(self, subject_name):
-        if (not subject_name in self.docs) or (self.docs[subject_name] == None):
+        #subject_name = to_en[subject_name]
+        self.cur.execute(
+            "select * from docs_task where lesson_name = ?", [subject_name])
+        if len(self.cur.fetchall()) == 0:
             return []
 
-        return self.docs[subject_name]
+        self.cur.execute(
+            "select task from docs_task where lesson_name = ?", [subject_name])
+        ans = self.cur.fetchall()
+        ans = [i[0] for i in ans]
+        return ans
 
     def get_photos(self, subject_name):
-        if (not subject_name in self.photos) or (self.photos[subject_name] == None):
+        #subject_name = to_en[subject_name]
+        self.cur.execute(
+            "select * from photo_task where lesson_name = ?", [subject_name])
+        if len(self.cur.fetchall()) == 0:
             return []
 
-        return self.photos[subject_name]
+        self.cur.execute(
+            "select task from photo_task where lesson_name = ?", [subject_name])
+        ans = self.cur.fetchall()
+        ans = [i[0] for i in ans]
+        return ans
 
     def get_hometask(self):
         hometask = ""
         for subject_name in timetable[day]:
 
-            if not subject_name in self.docs:
-                self.docs[subject_name] = []
-            if not subject_name in self.photos:
-                self.photos[subject_name] = []
-
             hometask += "<b>" + subject_name + "</b>" + "\n"
 
-            if not subject_name in self.hometask or len(self.hometask[subject_name]) == 0:
+
+            if len(self.get_task(subject_name)) == 0:
                 task = None
             else:
-                task = self.hometask[subject_name]
-            
+                task = strings.tab + self.get_task(subject_name) + "\n"
+
             if task == None:
                 hometask += strings.tab + strings.no_task
             else:
                 hometask += task
-            
-            if self.photos[subject_name] != [] or self.docs[subject_name] != []:
+
+            if self.get_files(subject_name) != [] or self.get_photos(subject_name) != []:
                 hometask += strings.tab + strings.have_files + "\n"
-        
+
         return hometask
 
 
 hometask = Hometask()
 
 #admin tools
+
+
 async def change_timetable(message: types.Message):
     if not message.from_user.id in admins_id:
         await message.reply(strings.not_adm)
@@ -184,26 +292,28 @@ async def change_timetable(message: types.Message):
     for lesson in lessons:
         timetable[day_num].append(lesson)
 
-    await message.reply(text = strings.succesfully_updated)
+    await message.reply(text=strings.succesfully_updated)
+
 
 async def add_user(message: types.Message):
     uid = message.from_user.id
 
     if not uid in admins_id:
-        await bot.send_message(text = strings.no_adm)
+        await bot.send_message(text=strings.no_adm)
         return
-    
+
     text = message.text
-    text = text[len('/add_user ')  : len(text)]
+    text = text[len('/add_user '): len(text)]
 
     try:
         add_id = int(text)
         users_ids.append(add_id)
-        await message.reply(text = strings.succesfully_updated)
+        await message.reply(text=strings.succesfully_updated)
     except:
-        await message.reply(text = strings.incorrect_id)
+        await message.reply(text=strings.incorrect_id)
 
-async def del_user(message:types.Message):
+
+async def del_user(message: types.Message):
     uid = message.from_user.id
 
     if not uid in admins_id:
@@ -219,6 +329,7 @@ async def del_user(message:types.Message):
         await message.reply(text=strings.succesfully_cleared)
     except ValueError:
         await message.reply(text=strings.incorrect_id)
+
 
 async def add_admin(message: types.Message):
     uid = message.from_user.id
@@ -237,13 +348,14 @@ async def add_admin(message: types.Message):
     except:
         await message.reply(text=strings.incorrect_id)
 
+
 async def clear_hometask(message):
     uid = message.from_user.id
 
     if not uid in admins_id:
         message.reply(strings.no_adm)
-        return 
-    
+        return
+
     text = message.text
     text = text[len('/clear_hometask '):len(text)]
 
@@ -268,9 +380,10 @@ async def start(message: types.Message):
 
     last_keyboard[uid] = deque()
     state[uid] = 0
-    updates_by_user[uid] = {'subject_name':"", 'text':"", 'files':[], 'photos':[]}
+    updates_by_user[uid] = {'subject_name': "",
+                            'text': "", 'files': [], 'photos': []}
     last_keyboard[uid].append('main')
-    await message.reply(text = strings.start_message, reply_markup=keyboard('main'))
+    await message.reply(text=strings.start_message, reply_markup=keyboard('main'))
 
 
 async def get_hometask(message: types.Message):
@@ -281,14 +394,14 @@ async def get_hometask(message: types.Message):
         return
 
     if not uid in state:
-        await message.reply(text = strings.send_start)
+        await message.reply(text=strings.send_start)
         return
 
     if state[uid] == 3:
-        await message.reply(text = strings.bad_task)
+        await message.reply(text=strings.bad_task)
         return
 
-    await send_msg(user_id = uid, text = hometask.get_hometask())
+    await send_msg(user_id=uid, text=hometask.get_hometask())
 
 
 async def send_lessons(message: types.Message, typ):
@@ -301,20 +414,19 @@ async def send_lessons(message: types.Message, typ):
     if not uid in state:
         await message.reply(text=strings.send_start)
         return
-    
+
     if state[uid] == 3:
         await message.reply(text=strings.bad_task)
         return
 
     if state[uid] != 0:
-        await message.reply(text = strings.use_buttons) 
+        await message.reply(text=strings.use_buttons)
         return
-
 
     state[uid] = typ
 
     last_keyboard[uid].append('main')
-    await message.reply(text = strings.choose_subject, reply_markup=keyboard('lessons'))
+    await message.reply(text=strings.choose_subject, reply_markup=keyboard('lessons'))
 
 
 async def lesson_name_sended(message: types.Message):
@@ -327,26 +439,33 @@ async def lesson_name_sended(message: types.Message):
     if not uid in state:
         await message.reply(text=strings.send_start)
         return
-    
+
     if state[uid] == 1:
         await message.reply(text=hometask.get_task(message.text))
+
         for file in hometask.get_files(message.text):
-            await bot.send_document(chat_id = uid, document = file)
+            await bot.send_document(chat_id=uid, document=file)
         for file in hometask.get_photos(message.text):
-            await bot.send_photo(chat_id = uid, photo = file)
-        
+            await bot.send_photo(chat_id=uid, photo=file)
+
     elif state[uid] == 2:
         state[uid] = 3
         updates_by_user[uid]['subject_name'] = message.text
-        await message.reply(text=strings.send_task, reply_markup= keyboard('done'))
+
+        await bot.send_message(DATACHATID, message.text)
+        await message.reply(text=strings.send_task, reply_markup=keyboard('done'))
     elif state[uid] == 3:
-        await message.reply(text = strings.incorrect_task)
+        await message.reply(text=strings.incorrect_task)
         return
+    elif state[uid] == 5:
+        updates_by_user[uid]['subject_name'] = message.text
+        await message.reply(text = strings.sure, reply_markup=keyboard('done'))
+        return 
     else:
-        await message.reply(text = strings.use_buttons)
+        await message.reply(text=strings.use_buttons)
 
 
-async def others(message: types.Message):    
+async def others(message: types.Message):
     uid = message.from_user.id
 
     if not uid in users_ids:
@@ -356,10 +475,10 @@ async def others(message: types.Message):
     if not uid in state:
         await message.reply(text=strings.send_start)
         return
-    
+
     no_intresting_states = [0, 1, 2]
     if state[uid] in no_intresting_states:
-        await message.reply(text = strings.use_buttons)
+        await message.reply(text=strings.use_buttons)
     else:
         if state[uid] == 3:
 
@@ -373,11 +492,20 @@ async def others(message: types.Message):
                 log_str += message.from_user.username
             log_str += ')'
             log_str += '(' + str(uid) + '): '
-            log_str += message.text + '|' + updates_by_user[uid]['subject_name'] + "\n"
+            log_str += message.text + '|' + \
+            updates_by_user[uid]['subject_name'] + "\n"
 
-            await bot.send_message(chat_id = INFOCHATID, text = log_str)
+            await bot.send_message(chat_id=INFOCHATID, text=log_str)
 
-            updates_by_user[uid]['text'] += strings.tab + (str(message.text)) + "\n"
+            fl = False
+            if(len(updates_by_user[uid]['text']) != 0):
+                fl = True
+                updates_by_user[uid]['text'] += strings.tab
+            
+            updates_by_user[uid]['text'] += (str(message.text))
+            if fl:
+                updates_by_user[uid]['text'] += "\n"
+
 
 
 async def back(message: types.Message):
@@ -416,11 +544,11 @@ async def docs_handler(message: types.Message):
     if not uid in state:
         await message.reply(strings.send_start)
         return
-    
+
     if state[uid] != 3:
         await message.reply(strings.use_buttons)
         return
-    
+
     doc_id = message.document.file_id
 
     updates_by_user[uid]['files'].append(doc_id)
@@ -434,10 +562,13 @@ async def docs_handler(message: types.Message):
     if message.from_user.username != None:
         log_str += message.from_user.username
     log_str += ')'
-    log_str += '(' + str(uid) + ') отправил документ|' + updates_by_user[uid]['subject_name'] + "\n"
+    log_str += '(' + str(uid) + ') отправил документ|' + \
+        updates_by_user[uid]['subject_name'] + "\n"
 
-    await bot.send_message(chat_id= INFOCHATID, text = log_str)
-    await bot.send_document(chat_id = INFOCHATID, document = doc_id)
+    await bot.send_document(chat_id= DATACHATID, document=doc_id)
+
+    await bot.send_message(chat_id=INFOCHATID, text=log_str)
+    await bot.send_document(chat_id=INFOCHATID, document=doc_id)
 
 
 async def photo_handler(message: types.Message):
@@ -468,11 +599,13 @@ async def photo_handler(message: types.Message):
     if message.from_user.username != None:
         log_str += message.from_user.username
     log_str += ')'
-    log_str += '(' + str(uid) + ') отправил фото|' + updates_by_user[uid]['subject_name'] + "\n"
+    log_str += '(' + str(uid) + ') отправил фото|' + \
+    updates_by_user[uid]['subject_name'] + "\n"
 
-    await bot.send_message(chat_id = INFOCHATID, text = log_str)
-    await bot.send_photo(chat_id = INFOCHATID, photo = doc_id)
-    
+    await bot.send_photo(chat_id = DATACHATID, photo = doc_id)
+    await bot.send_message(chat_id=INFOCHATID, text=log_str)
+    await bot.send_photo(chat_id=INFOCHATID, photo=doc_id)
+
 
 async def done(message: types.Message):
     uid = message.from_user.id
@@ -484,21 +617,30 @@ async def done(message: types.Message):
     if not uid in state:
         await message.reply(strings.send_start)
         return
+
     
-    if state[uid] != 3:
+
+    if state[uid] != 3 and state[uid] != 5:
         await message.reply(strings.use_buttons)
         return
-    
+
+    if state[uid] == 5:
+        hometask.clear_photos(updates_by_user[uid]['subject_name'])
+        hometask.clear_docs(updates_by_user[uid]['subject_name'])
+
+        await message.reply(strings.done, reply_markup=keyboard('lessons'))
+        return
+
     text = updates_by_user[uid]['text']
 
     if len(text) != 0:
         hometask.update_task(updates_by_user[uid]['subject_name'], text)
 
-    files = updates_by_user[uid]['files']     
+    files = updates_by_user[uid]['files']
     if len(files) != 0:
         hometask.update_files(updates_by_user[uid]['subject_name'], files)
-    
-    photos = updates_by_user[uid]['photos'] 
+
+    photos = updates_by_user[uid]['photos']
     if len(photos) != 0:
         hometask.update_photos(updates_by_user[uid]['subject_name'], photos)
 
@@ -507,7 +649,11 @@ async def done(message: types.Message):
     updates_by_user[uid]['photos'] = []
     updates_by_user[uid]['text'] = ""
     state[uid] = 2
-    await bot.send_message(chat_id = uid, text = strings.done, reply_markup=keyboard('lessons'))
+
+    await bot.send_message(chat_id=DATACHATID, text = strings.done)
+
+    await bot.send_message(chat_id=uid, text=strings.done, reply_markup=keyboard('lessons'))
+
 
 async def updating():
     global day
@@ -516,52 +662,63 @@ async def updating():
 
     while True:
 
-        if now().hour == 12 and not was_update:
+        if now().hour == 6 and not was_update:
             was_update = True
 
             day += 1
             day %= 7
-        
+
         if now().hour == 13:
             was_update = False
 
         await asyncio.sleep(UPDATE_INTERVAL)
 
 
+async def data_recovery():
+    pass
+
 def Bot():
 
-    @disp.message_handler(commands = ['add_user'])
+    @disp.message_handler(commands = ['recover'])
+    async def data_recover(message: types.Message):
+        await data_recovery()
+
+    @disp.message_handler(commands=['add_user'])
     async def add_userr(message: types.Message):
         await add_user(message)
 
-    
-    @disp.message_handler(commands = ['add_admin'])
+    @disp.message_handler(commands=['add_admin'])
     async def add_adminn(message: types.Message):
         await add_admin(message)
 
-    @disp.message_handler(commands = ['change_timetable'])
+    @disp.message_handler(commands=['change_timetable'])
     async def change_timetablee(message: types.Message):
         await change_timetable(message)
-    
-    @disp.message_handler(commands = ['clear_hometask'])
+
+    @disp.message_handler(commands=['clear_hometask'])
     async def change_timetablee(message: types.Message):
         await clear_hometask(message)
 
     @disp.message_handler(commands=['start'])
     async def startt(message: types.Message):
+
         await start(message)
-    
+
     @disp.message_handler(text_in_msg('main', 0))
     async def get_hometaskk(message: types.Message):
         await get_hometask(message)
-    
-    @disp.message_handler(text_in_msg('main', 1) )
+
+    @disp.message_handler(text_in_msg('main', 1))
     async def send_lessonss(message: types.Message):
         await send_lessons(message, 1)
-    
+
     @disp.message_handler(text_in_msg('main', 2))
     async def send_lessonss2(message: types.Message):
         await send_lessons(message, 2)
+    
+    @disp.message_handler(text_in_msg('main', 3))
+    async def send_lessonss2(message: types.Message):
+        await send_lessons(message, 5)
 
     @disp.message_handler(text_in_msg('done', 0))
     async def donee(message: types.Message):
@@ -570,7 +727,7 @@ def Bot():
     @disp.message_handler(text_is_lesson_name())
     async def lesson_namee(message: types.Message):
         await lesson_name_sended(message)
-    
+
     @disp.message_handler(text_in_msg('lessons', 13))
     async def backk(message: types.Message):
         await back(message)
@@ -579,7 +736,7 @@ def Bot():
     async def photo_handlerr(message: types.Message):
         await photo_handler(message)
 
-    @disp.message_handler(content_types = ['document'])
+    @disp.message_handler(content_types=['document'])
     async def docs_handlerr(message: types.Message):
         await docs_handler(message)
 
@@ -587,10 +744,12 @@ def Bot():
     async def otherss(message: types.Message):
         await others(message)
 
-    
     (disp.loop or asyncio.get_event_loop()).create_task(updating())
     executor.start_polling(disp)
 
 
+
+
 if __name__ == "__main__":
+
     Bot()
