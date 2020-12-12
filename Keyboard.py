@@ -11,7 +11,8 @@ keyboards = {
     'main':[
         [KeyboardButton(text="📚 Получить домашнее задание 📚")],
         [KeyboardButton(text="📕 Получить дз по предмету 📕")],
-        [KeyboardButton(text="✏️ Добавить домашнее задание ✏️")]
+        [KeyboardButton(text="✏️ Добавить домашнее задание ✏️")],
+        [KeyboardButton(text="🧹 Удалить домашнее задание 🧹")]
     ],
     'lessons':[
         [kb("Алгебра"), kb("Геометрия")],
