@@ -2,11 +2,6 @@ from aiogram import types
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.utils.markdown import text, bold, italic, code, pre
 
-def kb(text):
-    return KeyboardButton(text = text)
-
-lessons_num = 13
-
 keyboards = {
     'main':[
         [KeyboardButton(text="📚 Получить домашнее задание 📚")],
@@ -15,18 +10,18 @@ keyboards = {
         [KeyboardButton(text="🧹 Удалить домашнее задание 🧹")]
     ],
     'lessons':[
-        [kb("Алгебра"), kb("Геометрия")],
-        [kb("Физика"), kb("Русский язык")],
-        [kb("История"), kb("Литература")],
-        [kb("Химия"), kb("Обществознание")],
-        [kb("Биология"), kb("География")],
-        [kb("Английский язык"), kb("ОБЖ")],
-        [kb("Информатика и ИКТ")],
-        [kb("Назад")]
+        [KeyboardButton("Алгебра"), KeyboardButton("Геометрия")],
+        [KeyboardButton("Физика"), KeyboardButton("Русский язык")],
+        [KeyboardButton("История"), KeyboardButton("Литература")],
+        [KeyboardButton("Химия"), KeyboardButton("Обществознание")],
+        [KeyboardButton("Биология"), KeyboardButton("География")],
+        [KeyboardButton("Английский язык"), KeyboardButton("ОБЖ")],
+        [KeyboardButton("Информатика и ИКТ")],
+        [KeyboardButton("Назад")]
     ],
     'done':[
-        [kb("Готово")],
-        [kb("Отмена")]
+        [KeyboardButton("Готово")],
+        [KeyboardButton("Отмена")]
     ]
 }
 
