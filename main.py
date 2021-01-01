@@ -674,13 +674,19 @@ async def updating():
 
 
 async def updates_from_sg():
-    while True:
-            
+
+    while True:        
         current_day = now()
         day_delta = timedelta(days=1)
 
+        cnt_it2 = 0
+
         cnt_it = 0
-        while cnt_it <= 7:
+        while cnt_it <= 7 and cnt_it2 < 50:
+            cnt_it2 += 1
+
+            subj_update = dict()
+
             current_day = current_day + day_delta
 
             if not holiday_date(current_day, sg):
@@ -689,13 +695,22 @@ async def updates_from_sg():
                 day = sg.getHomework(date_to_str(current_day), date_to_str(current_day))[
                     'weekDays'][0]['lessons']
                 for lesson in day:
-                    subject_name = lesson['subjectName']  
+                    subject_name = lesson['subjectName']
                     if 'assignments' in lesson:
                         assignments = lesson['assignments']
                         for assignment in assignments:
                             if assignment['typeId'] == 3:
-                                hometask.update_task(subject_name, assignment['assignmentName'])
-        
+                                if not subject_name in subj_update:
+                                    subj_update[subject_name] = [assignment['assignmentName']]
+                                else:
+                                    subj_update[subject_name].append(assignment['assignmentName'])
+
+                for subj_name in subj_update:
+                    task = '' 
+                    for subtask in subj_update[subj_name]:
+                        task += subtask + '\n'
+                    hometask.update_task(subj_name, task)
+
         await asyncio.sleep(300)
 
 def Bot():
@@ -777,7 +792,6 @@ def Bot():
     (disp.loop or asyncio.get_event_loop()).create_task(updating())
     (disp.loop or asyncio.get_event_loop()).create_task(updates_from_sg())
     executor.start_polling(disp)
-
 
 
 if __name__ == "__main__":
